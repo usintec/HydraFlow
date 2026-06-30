@@ -1,11 +1,15 @@
 #include <HydraCore/Application/ModuleManager.h>
 #include <HydraCore/Application/IHydraModule.h>
 #include <HydraCore/Application/EngineContext.h>
-#include <HydraCore/Logging/Logger.h>
+#include <HydraCore/Logging/LoggingMacros.h>
 
 #include <algorithm>
 
 namespace Hydra {
+
+// =============================================================================
+// Registration
+// =============================================================================
 
 void ModuleManager::Register(UniquePtr<IHydraModule> module)
 {
@@ -21,13 +25,17 @@ bool ModuleManager::Unregister(StringView name, EngineContext& ctx)
             return m->GetName() == name;
         });
 
-    if (it == m_Modules.end()) {
+    if (it == m_Modules.end())
+    {
         HYDRA_LOG_WARN("[ModuleManager] Unregister: module '{}' not found", name);
         return false;
     }
 
-    if ((*it)->IsInitialized()) {
-        HYDRA_LOG_DEBUG("[ModuleManager] Shutting down module '{}' before unregistering", name);
+    // If the module was fully initialized we must give it a chance to clean up
+    // before we destroy it.
+    if ((*it)->IsInitialized())
+    {
+        HYDRA_LOG_DEBUG("[ModuleManager] Shutting down '{}' before unregistering", name);
         (*it)->OnShutdown(ctx);
     }
     (*it)->OnUnregister(ctx);
@@ -37,22 +45,39 @@ bool ModuleManager::Unregister(StringView name, EngineContext& ctx)
     return true;
 }
 
+// =============================================================================
+// Lifecycle — InitializeAll
+//
+// Two-phase approach:
+//   Phase 1 — OnRegister: every module is notified it has been added to the
+//              manager.  At this point no module is yet fully initialized.
+//   Phase 2 — OnInitialize: modules allocate resources and validate their
+//              dependencies.  If any module fails, startup is aborted before
+//              touching subsequent modules (fail-fast).
+// =============================================================================
+
 bool ModuleManager::InitializeAll(EngineContext& ctx)
 {
     HYDRA_LOG_INFO("[ModuleManager] Initializing {} module(s)...", m_Modules.size());
 
-    for (auto& module : m_Modules) {
+    // Phase 1: notification that the module has been registered
+    for (auto& module : m_Modules)
+    {
         HYDRA_LOG_DEBUG("[ModuleManager]   + OnRegister  : {}", module->GetName());
         module->OnRegister(ctx);
     }
 
-    for (auto& module : m_Modules) {
+    // Phase 2: resource acquisition / validation
+    for (auto& module : m_Modules)
+    {
         HYDRA_LOG_DEBUG("[ModuleManager]   + OnInitialize: {}", module->GetName());
-        if (!module->OnInitialize(ctx)) {
-            HYDRA_LOG_ERROR("[ModuleManager] Module '{}' failed to initialize — aborting",
+        if (!module->OnInitialize(ctx))
+        {
+            HYDRA_LOG_ERROR("[ModuleManager] Module '{}' failed OnInitialize — aborting",
                             module->GetName());
             return false;
         }
+        // Mark as initialized so ShutdownAll knows to call OnShutdown on it.
         module->m_Initialized = true;
     }
 
@@ -60,9 +85,17 @@ bool ModuleManager::InitializeAll(EngineContext& ctx)
     return true;
 }
 
+// =============================================================================
+// Lifecycle — UpdateAll / LateUpdateAll
+//
+// Only initialized modules receive update ticks.  A module that failed
+// OnInitialize is never updated.
+// =============================================================================
+
 void ModuleManager::UpdateAll(EngineContext& ctx, f64 deltaTime)
 {
-    for (auto& module : m_Modules) {
+    for (auto& module : m_Modules)
+    {
         if (module->IsInitialized())
             module->OnUpdate(ctx, deltaTime);
     }
@@ -70,20 +103,32 @@ void ModuleManager::UpdateAll(EngineContext& ctx, f64 deltaTime)
 
 void ModuleManager::LateUpdateAll(EngineContext& ctx, f64 deltaTime)
 {
-    for (auto& module : m_Modules) {
+    for (auto& module : m_Modules)
+    {
         if (module->IsInitialized())
             module->OnLateUpdate(ctx, deltaTime);
     }
 }
+
+// =============================================================================
+// Lifecycle — ShutdownAll
+//
+// Iterates in reverse registration order so modules are torn down in the
+// opposite sequence from initialization.  This respects implicit dependencies:
+// if module B depends on module A, B was registered after A and should be
+// shut down before A.
+// =============================================================================
 
 void ModuleManager::ShutdownAll(EngineContext& ctx)
 {
     HYDRA_LOG_INFO("[ModuleManager] Shutting down {} module(s) (reverse order)...",
                    m_Modules.size());
 
-    for (auto it = m_Modules.rbegin(); it != m_Modules.rend(); ++it) {
+    for (auto it = m_Modules.rbegin(); it != m_Modules.rend(); ++it)
+    {
         auto& module = *it;
-        if (module->IsInitialized()) {
+        if (module->IsInitialized())
+        {
             HYDRA_LOG_DEBUG("[ModuleManager]   - OnShutdown  : {}", module->GetName());
             module->OnShutdown(ctx);
             module->m_Initialized = false;
@@ -95,6 +140,10 @@ void ModuleManager::ShutdownAll(EngineContext& ctx)
     m_Modules.clear();
     HYDRA_LOG_INFO("[ModuleManager] All modules shut down");
 }
+
+// =============================================================================
+// Queries
+// =============================================================================
 
 usize ModuleManager::Count() const noexcept
 {
@@ -108,7 +157,8 @@ bool ModuleManager::IsEmpty() const noexcept
 
 IHydraModule* ModuleManager::Find(StringView name) const noexcept
 {
-    for (const auto& module : m_Modules) {
+    for (const auto& module : m_Modules)
+    {
         if (module->GetName() == name)
             return module.get();
     }

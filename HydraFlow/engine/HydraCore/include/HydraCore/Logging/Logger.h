@@ -3,127 +3,162 @@
 #include <HydraCore/Common/Platform.h>
 #include <HydraCore/Common/Types.h>
 #include <HydraCore/Common/NonCopyable.h>
+#include <HydraCore/Logging/LogLevel.h>
+#include <HydraCore/Logging/LogMessage.h>
+#include <HydraCore/Logging/ILogSink.h>
 
-#include <spdlog/spdlog.h>
-#include <spdlog/logger.h>
-
-#include <memory>
-#include <string>
+#include <format>
+#include <mutex>
+#include <vector>
 
 namespace Hydra {
 
-/// Log severity levels, mirrors spdlog::level for forward-compatibility.
-enum class LogLevel : i32
-{
-    Trace    = 0,
-    Debug    = 1,
-    Info     = 2,
-    Warn     = 3,
-    Error    = 4,
-    Critical = 5,
-    Off      = 6
-};
+// =============================================================================
+// Logger
+//
+// The central logging object.  Each Logger has:
+//   - A unique name (used in the log output and for lookup in LoggerFactory).
+//   - A minimum level: messages below this level are dropped before reaching
+//     any sink, making early rejection very cheap.
+//   - An ordered list of sinks.  Messages are forwarded to every sink whose
+//     own level filter also passes.
+//
+// Loggers are not constructed directly; use LoggerFactory to create and
+// retrieve named instances.
+//
+// Thread safety:
+//   Logger is fully thread-safe.  The sink list is protected by m_SinkMutex.
+//   Individual sinks are responsible for their own write serialisation.
+//
+// Lifecycle:
+//   Loggers are owned by LoggerFactory (via shared_ptr).  Destroying a Logger
+//   does not flush its sinks — call Flush() explicitly if needed.
+// =============================================================================
 
-/// Configuration passed to Logger::Initialize.
-struct LoggerConfig
-{
-    String  loggerName    = "Hydra";
-    String  logFilePath   = "hydra.log";
-    bool    enableConsole = true;
-    bool    enableFile    = false;
-    LogLevel level        = LogLevel::Debug;
-};
-
-/// ===========================================================================
-/// Logger
-///
-/// Thin wrapper around spdlog that owns a named logger instance.
-/// Call Logger::Initialize() early in startup before any log calls.
-/// The class is not instantiable — use the static interface.
-/// ===========================================================================
-class HYDRA_API Logger final : private NonCopyableNonMovable
+class HYDRA_API Logger final : private NonCopyable
 {
 public:
-    static void Initialize(const LoggerConfig& config = {});
-    static void Shutdown();
+    /// Loggers are created by LoggerFactory, but the constructor is public so
+    /// tests and custom factories can build them directly.
+    explicit Logger(String name, LogLevel level = LogLevel::Trace);
 
-    [[nodiscard]] static bool IsInitialized() noexcept;
+    ~Logger() = default;
 
-    static void SetLevel(LogLevel level) noexcept;
-    [[nodiscard]] static LogLevel GetLevel() noexcept;
+    // Allow move so LoggerFactory can emplace into containers
+    Logger(Logger&&)            = default;
+    Logger& operator=(Logger&&) = default;
 
-    // --- Raw log methods (prefer macros in production code) -----------------
+    // =========================================================================
+    // Identity
+    // =========================================================================
+
+    [[nodiscard]] const String& GetName()  const noexcept;
+
+    // =========================================================================
+    // Level filtering
+    // =========================================================================
+
+    /// Set the minimum level.  Any message with a lower severity is discarded
+    /// immediately without touching sinks.
+    void     SetLevel(LogLevel level) noexcept;
+
+    [[nodiscard]] LogLevel GetLevel() const noexcept;
+
+    /// Quick check used by macros to avoid building the format string when the
+    /// message would be discarded anyway.
+    [[nodiscard]] bool ShouldLog(LogLevel level) const noexcept;
+
+    // =========================================================================
+    // Sink management
+    // =========================================================================
+
+    /// Append a sink to the end of the sink list.
+    void AddSink(SharedPtr<ILogSink> sink);
+
+    /// Remove all sinks that compare equal (by pointer) to the given sink.
+    void RemoveSink(const SharedPtr<ILogSink>& sink);
+
+    /// Remove all sinks.
+    void ClearSinks();
+
+    /// Returns a snapshot of the current sink list (copy, not a live view).
+    [[nodiscard]] Vector<SharedPtr<ILogSink>> GetSinks() const;
+
+    // =========================================================================
+    // Core logging — accepting a pre-formatted string
+    // =========================================================================
+
+    /// Dispatch a pre-formatted message to all sinks.
+    /// This is the lowest-level entry point; all other Log overloads call this.
+    void Dispatch(LogLevel level, const SourceLocation& source, String message);
+
+    // =========================================================================
+    // Template logging — format string + arguments (C++20 std::format)
+    // =========================================================================
+
+    /// Log with explicit level and source location.
+    /// Formatting occurs here; if ShouldLog() returns false the format call is
+    /// skipped entirely.
     template<typename... Args>
-    static void Trace(spdlog::format_string_t<Args...> fmt, Args&&... args);
+    void Log(LogLevel                      level,
+             const SourceLocation&         source,
+             std::format_string<Args...>   fmt,
+             Args&&...                     args)
+    {
+        if (!ShouldLog(level)) return;
+        Dispatch(level, source, std::format(fmt, std::forward<Args>(args)...));
+    }
+
+    // ---- Convenience overloads (no source location) -------------------------
 
     template<typename... Args>
-    static void Debug(spdlog::format_string_t<Args...> fmt, Args&&... args);
+    void Trace(std::format_string<Args...> fmt, Args&&... args)
+    {
+        Log(LogLevel::Trace, {}, fmt, std::forward<Args>(args)...);
+    }
 
     template<typename... Args>
-    static void Info(spdlog::format_string_t<Args...> fmt, Args&&... args);
+    void Debug(std::format_string<Args...> fmt, Args&&... args)
+    {
+        Log(LogLevel::Debug, {}, fmt, std::forward<Args>(args)...);
+    }
 
     template<typename... Args>
-    static void Warn(spdlog::format_string_t<Args...> fmt, Args&&... args);
+    void Info(std::format_string<Args...> fmt, Args&&... args)
+    {
+        Log(LogLevel::Info, {}, fmt, std::forward<Args>(args)...);
+    }
 
     template<typename... Args>
-    static void Error(spdlog::format_string_t<Args...> fmt, Args&&... args);
+    void Warn(std::format_string<Args...> fmt, Args&&... args)
+    {
+        Log(LogLevel::Warn, {}, fmt, std::forward<Args>(args)...);
+    }
 
     template<typename... Args>
-    static void Critical(spdlog::format_string_t<Args...> fmt, Args&&... args);
+    void Error(std::format_string<Args...> fmt, Args&&... args)
+    {
+        Log(LogLevel::Error, {}, fmt, std::forward<Args>(args)...);
+    }
+
+    template<typename... Args>
+    void Fatal(std::format_string<Args...> fmt, Args&&... args)
+    {
+        Log(LogLevel::Fatal, {}, fmt, std::forward<Args>(args)...);
+    }
+
+    // =========================================================================
+    // Flush
+    // =========================================================================
+
+    /// Flush every sink attached to this logger.
+    void Flush();
 
 private:
-    static SharedPtr<spdlog::logger> s_Logger;
+    String                    m_Name;      ///< Unique logger name
+    LogLevel                  m_Level;     ///< Minimum level (atomic-like via mutex)
+    Vector<SharedPtr<ILogSink>> m_Sinks;   ///< Ordered list of output sinks
+    mutable std::mutex        m_SinkMutex; ///< Guards m_Sinks and m_Level
 };
 
-// ===========================================================================
-// Template implementations
-// ===========================================================================
-
-template<typename... Args>
-void Logger::Trace(spdlog::format_string_t<Args...> fmt, Args&&... args)
-{
-    if (s_Logger) s_Logger->trace(fmt, std::forward<Args>(args)...);
-}
-
-template<typename... Args>
-void Logger::Debug(spdlog::format_string_t<Args...> fmt, Args&&... args)
-{
-    if (s_Logger) s_Logger->debug(fmt, std::forward<Args>(args)...);
-}
-
-template<typename... Args>
-void Logger::Info(spdlog::format_string_t<Args...> fmt, Args&&... args)
-{
-    if (s_Logger) s_Logger->info(fmt, std::forward<Args>(args)...);
-}
-
-template<typename... Args>
-void Logger::Warn(spdlog::format_string_t<Args...> fmt, Args&&... args)
-{
-    if (s_Logger) s_Logger->warn(fmt, std::forward<Args>(args)...);
-}
-
-template<typename... Args>
-void Logger::Error(spdlog::format_string_t<Args...> fmt, Args&&... args)
-{
-    if (s_Logger) s_Logger->error(fmt, std::forward<Args>(args)...);
-}
-
-template<typename... Args>
-void Logger::Critical(spdlog::format_string_t<Args...> fmt, Args&&... args)
-{
-    if (s_Logger) s_Logger->critical(fmt, std::forward<Args>(args)...);
-}
-
 } // namespace Hydra
-
-// ===========================================================================
-// Logging Macros
-// ===========================================================================
-
-#define HYDRA_LOG_TRACE(...)    ::Hydra::Logger::Trace(__VA_ARGS__)
-#define HYDRA_LOG_DEBUG(...)    ::Hydra::Logger::Debug(__VA_ARGS__)
-#define HYDRA_LOG_INFO(...)     ::Hydra::Logger::Info(__VA_ARGS__)
-#define HYDRA_LOG_WARN(...)     ::Hydra::Logger::Warn(__VA_ARGS__)
-#define HYDRA_LOG_ERROR(...)    ::Hydra::Logger::Error(__VA_ARGS__)
-#define HYDRA_LOG_CRITICAL(...) ::Hydra::Logger::Critical(__VA_ARGS__)

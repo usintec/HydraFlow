@@ -1,21 +1,33 @@
 #include <HydraCore/Config/ApplicationSettings.h>
 #include <HydraCore/Config/ConfigManager.h>
-#include <HydraCore/Logging/Logger.h>
+#include <HydraCore/Logging/LogLevel.h>
 
 namespace Hydra {
+
+// =============================================================================
+// MakeDefault
+// =============================================================================
 
 ApplicationSettings ApplicationSettings::MakeDefault()
 {
     ApplicationSettings s;
+
+    // ---- Identity -----------------------------------------------------------
     s.appName        = "HydraFlow Application";
     s.appVersion     = "0.1.0";
     s.configFilePath = "config/hydra.yaml";
 
-    s.logging.loggerName    = "Hydra";
-    s.logging.enableConsole = true;
-    s.logging.enableFile    = false;
+    // ---- Logging (Module 2 LoggerConfig) ------------------------------------
+    s.logging.name          = "Hydra";
     s.logging.level         = LogLevel::Debug;
+    s.logging.enableConsole = true;
+    s.logging.consoleLevel  = LogLevel::Trace;
+    s.logging.enableFile    = false;
+    s.logging.filePath      = "logs/hydra.log";
+    s.logging.maxFileBytes  = 10 * 1024 * 1024; // 10 MiB
+    s.logging.maxFileCount  = 5;
 
+    // ---- Update loop --------------------------------------------------------
     s.updateLoop.fixedTimeStep   = false;
     s.updateLoop.targetFrameRate = 60.0;
     s.updateLoop.maxDeltaTime    = 0.25;
@@ -23,36 +35,52 @@ ApplicationSettings ApplicationSettings::MakeDefault()
     return s;
 }
 
+// =============================================================================
+// LoadFromFile
+// =============================================================================
+
 ApplicationSettings ApplicationSettings::LoadFromFile(StringView path)
 {
+    // Start from sensible defaults; override only what the file specifies.
     ApplicationSettings s = MakeDefault();
 
     ConfigManager cfg;
-    if (!cfg.LoadFile(std::filesystem::path(path))) {
-        // Logger may not be initialized yet — use stderr
-        fprintf(stderr, "[HydraCore] ApplicationSettings: failed to load '%.*s', using defaults\n",
+    if (!cfg.LoadFile(std::filesystem::path(path)))
+    {
+        // Log to stderr because the Logger is not yet initialised at this stage.
+        fprintf(stderr,
+                "[HydraCore] ApplicationSettings: '%.*s' not found or invalid — using defaults\n",
                 static_cast<int>(path.size()), path.data());
         return s;
     }
 
+    // ---- Identity -----------------------------------------------------------
     s.appName    = cfg.GetOrDefault<std::string>("app.name",    s.appName);
     s.appVersion = cfg.GetOrDefault<std::string>("app.version", s.appVersion);
 
+    // ---- Logging ------------------------------------------------------------
     s.logging.enableConsole = cfg.GetOrDefault<bool>("logging.console", s.logging.enableConsole);
     s.logging.enableFile    = cfg.GetOrDefault<bool>("logging.file",    s.logging.enableFile);
-    s.logging.logFilePath   = cfg.GetOrDefault<std::string>("logging.path", s.logging.logFilePath);
+    s.logging.filePath      = cfg.GetOrDefault<std::string>("logging.path", s.logging.filePath);
 
-    const std::string levelStr = cfg.GetOrDefault<std::string>("logging.level", "debug");
-    if      (levelStr == "trace")    s.logging.level = LogLevel::Trace;
-    else if (levelStr == "debug")    s.logging.level = LogLevel::Debug;
-    else if (levelStr == "info")     s.logging.level = LogLevel::Info;
-    else if (levelStr == "warn")     s.logging.level = LogLevel::Warn;
-    else if (levelStr == "error")    s.logging.level = LogLevel::Error;
-    else if (levelStr == "critical") s.logging.level = LogLevel::Critical;
+    // Parse the level string ("trace" / "debug" / "info" / etc.)
+    const std::string levelStr =
+        cfg.GetOrDefault<std::string>("logging.level", "debug");
+    s.logging.level = LogLevelFromString(levelStr);
 
-    s.updateLoop.targetFrameRate = cfg.GetOrDefault<double>("update_loop.target_fps",    s.updateLoop.targetFrameRate);
-    s.updateLoop.maxDeltaTime    = cfg.GetOrDefault<double>("update_loop.max_delta_time", s.updateLoop.maxDeltaTime);
-    s.updateLoop.fixedTimeStep   = cfg.GetOrDefault<bool>  ("update_loop.fixed",          s.updateLoop.fixedTimeStep);
+    // File rotation settings
+    s.logging.maxFileBytes =
+        cfg.GetOrDefault<usize>("logging.max_file_bytes", s.logging.maxFileBytes);
+    s.logging.maxFileCount =
+        cfg.GetOrDefault<u32>("logging.max_file_count", s.logging.maxFileCount);
+
+    // ---- Update loop --------------------------------------------------------
+    s.updateLoop.targetFrameRate =
+        cfg.GetOrDefault<double>("update_loop.target_fps",     s.updateLoop.targetFrameRate);
+    s.updateLoop.maxDeltaTime    =
+        cfg.GetOrDefault<double>("update_loop.max_delta_time", s.updateLoop.maxDeltaTime);
+    s.updateLoop.fixedTimeStep   =
+        cfg.GetOrDefault<bool>  ("update_loop.fixed",          s.updateLoop.fixedTimeStep);
 
     return s;
 }

@@ -1,26 +1,50 @@
 #pragma once
 
-/// ===========================================================================
-/// HydraCore — Convenience Umbrella Header
-///
-/// Include this single header to bring in the entire public API of HydraCore.
-/// For compilation-speed-sensitive translation units, prefer including only
-/// the specific subsystem headers you need.
-/// ===========================================================================
+// =============================================================================
+// HydraCore — Umbrella Header
+//
+// Including this single header brings in the entire public API of HydraCore.
+// For large translation units sensitive to compile time, prefer including only
+// the specific subsystem header(s) you need.
+//
+// Subsystem include order matters for documentation purposes only — all headers
+// are individually self-contained and include their own transitive dependencies.
+// =============================================================================
 
-// Common
+// ---------------------------------------------------------------------------
+// Common — platform detection, primitive types, RAII helpers
+// ---------------------------------------------------------------------------
 #include <HydraCore/Common/Platform.h>
 #include <HydraCore/Common/Types.h>
 #include <HydraCore/Common/NonCopyable.h>
 
-// Logging
+// ---------------------------------------------------------------------------
+// Module 2: Logging
+// Full-featured logging subsystem: sinks, formatters, log rotation, macros.
+// Placed before Config and Application so all modules can use HYDRA_* macros.
+// ---------------------------------------------------------------------------
+#include <HydraCore/Logging/LogLevel.h>
+#include <HydraCore/Logging/LogMessage.h>
+#include <HydraCore/Logging/Formatter.h>
+#include <HydraCore/Logging/ILogSink.h>
+#include <HydraCore/Logging/ConsoleSink.h>
+#include <HydraCore/Logging/FileSink.h>
+#include <HydraCore/Logging/NullSink.h>
 #include <HydraCore/Logging/Logger.h>
+#include <HydraCore/Logging/LoggerFactory.h>
+#include <HydraCore/Logging/LoggingMacros.h>   // HYDRA_INFO / HYDRA_ERROR / etc.
 
-// Config
+// ---------------------------------------------------------------------------
+// Module 1: Config
+// YAML/JSON configuration loading; ApplicationSettings value type.
+// ---------------------------------------------------------------------------
 #include <HydraCore/Config/ApplicationSettings.h>
 #include <HydraCore/Config/ConfigManager.h>
 
-// Application
+// ---------------------------------------------------------------------------
+// Module 1: Application
+// Engine lifecycle, module registration, service locator.
+// ---------------------------------------------------------------------------
 #include <HydraCore/Application/IHydraModule.h>
 #include <HydraCore/Application/EngineContext.h>
 #include <HydraCore/Application/ModuleManager.h>

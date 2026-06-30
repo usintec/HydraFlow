@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 #include <HydraCore/Application/ModuleManager.h>
 #include <HydraCore/Application/EngineContext.h>
-#include <HydraCore/Logging/Logger.h>
+#include <HydraCore/Logging/LoggerFactory.h>
 
 using namespace Hydra;
 
-// --------------------------------------------------------------------------
-// Test fixture helper module
-// --------------------------------------------------------------------------
+// =============================================================================
+// Test helper module — records which lifecycle hooks were called
+// =============================================================================
 
 struct CallLog
 {
@@ -28,33 +28,45 @@ public:
     StringView GetName()    const noexcept override { return "TestModule"; }
     StringView GetVersion() const noexcept override { return "1.0.0"; }
 
-    void OnRegister(EngineContext&) override          { m_Log.registered  = true; }
-    bool OnInitialize(EngineContext&) override        { m_Log.initialized = true; return !m_FailInit; }
-    void OnUpdate(EngineContext&, f64) override       { ++m_Log.updateCount; }
-    void OnLateUpdate(EngineContext&, f64) override   { ++m_Log.lateCount; }
-    void OnShutdown(EngineContext&) override          { m_Log.shutdown     = true; }
-    void OnUnregister(EngineContext&) override        { m_Log.unregistered = true; }
+    void OnRegister(EngineContext&)        override { m_Log.registered  = true; }
+    bool OnInitialize(EngineContext&)      override { m_Log.initialized = true; return !m_FailInit; }
+    void OnUpdate(EngineContext&, f64)     override { ++m_Log.updateCount; }
+    void OnLateUpdate(EngineContext&, f64) override { ++m_Log.lateCount; }
+    void OnShutdown(EngineContext&)        override { m_Log.shutdown     = true; }
+    void OnUnregister(EngineContext&)      override { m_Log.unregistered = true; }
 
 private:
     CallLog& m_Log;
     bool     m_FailInit;
 };
 
-// --------------------------------------------------------------------------
+// =============================================================================
+// Fixture — ensures LoggerFactory is up so ModuleManager can log freely
+// =============================================================================
 
 class ModuleManagerTest : public ::testing::Test
 {
 protected:
     void SetUp() override
     {
+        LoggerFactory::Shutdown();
         LoggerConfig cfg;
-        cfg.enableConsole = false;
-        Logger::Initialize(cfg);
+        cfg.name          = "Hydra";
+        cfg.enableConsole = false; // silence during tests
+        LoggerFactory::Initialize(cfg);
     }
-    void TearDown() override { Logger::Shutdown(); }
+
+    void TearDown() override
+    {
+        LoggerFactory::Shutdown();
+    }
 
     EngineContext ctx;
 };
+
+// =============================================================================
+// Tests
+// =============================================================================
 
 TEST_F(ModuleManagerTest, RegisterAndCountModules)
 {
