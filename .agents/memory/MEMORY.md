@@ -1,0 +1,1 @@
+- [HydraCore build setup](hydracore-build.md) — C++20 static lib; all deps via Nix system packages; build in HydraFlow/build/Debug with Ninja

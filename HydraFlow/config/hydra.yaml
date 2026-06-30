@@ -1,0 +1,14 @@
+app:
+  name: HydraFlow Application
+  version: 0.1.0
+
+logging:
+  console: true
+  file: false
+  path: logs/hydra.log
+  level: debug
+
+update_loop:
+  target_fps: 60.0
+  max_delta_time: 0.25
+  fixed: false
