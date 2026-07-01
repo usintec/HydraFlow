@@ -12,6 +12,9 @@ add_executable(HydraCore_Tests
 
     # Module 2 tests
     test_Logging_Module2.cpp
+
+    # Module 3 tests
+    test_Configuration_Module3.cpp
 )
 
 target_link_libraries(HydraCore_Tests

@@ -50,6 +50,17 @@ add_library(HydraCore STATIC
     src/Logging/FileSink.cpp       # Thread-safe rotating file output
     src/Logging/Logger.cpp         # Logger: sink dispatch, level guard, thread-safety
     src/Logging/LoggerFactory.cpp  # Global registry + convenience factory methods
+
+    # ------------------------------------------------------------------
+    # Module 3 — Configuration
+    # Structured, typed, validated, environment-aware configuration.
+    # ------------------------------------------------------------------
+    src/Configuration/ConfigValue.cpp          # Dynamically-typed config tree node (nlohmann backend)
+    src/Configuration/ConfigNode.cpp           # Path-aware cursor + dot-path navigation
+    src/Configuration/Configuration.cpp        # Config document: root value + load/merge + YAML/JSON I/O
+    src/Configuration/ConfigSchema.cpp         # Validation rules (RequireKey/Type/Range/AllowValues)
+    src/Configuration/EnvironmentSettings.cpp  # Env enum + HYDRA_ENV detection
+    src/Configuration/ConfigurationManager.cpp # Main façade: layered config, schema, hot reload
 )
 
 # =============================================================================

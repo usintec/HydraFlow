@@ -42,6 +42,18 @@
 #include <HydraCore/Config/ConfigManager.h>
 
 // ---------------------------------------------------------------------------
+// Module 3: Configuration
+// Structured, typed, validated, environment-aware configuration system.
+// ---------------------------------------------------------------------------
+#include <HydraCore/Configuration/ConfigValue.h>
+#include <HydraCore/Configuration/ConfigNode.h>
+#include <HydraCore/Configuration/Configuration.h>
+#include <HydraCore/Configuration/ConfigSchema.h>
+#include <HydraCore/Configuration/EnvironmentSettings.h>
+#include <HydraCore/Configuration/IHotReloadListener.h>
+#include <HydraCore/Configuration/ConfigurationManager.h>
+
+// ---------------------------------------------------------------------------
 // Module 1: Application
 // Engine lifecycle, module registration, service locator.
 // ---------------------------------------------------------------------------
