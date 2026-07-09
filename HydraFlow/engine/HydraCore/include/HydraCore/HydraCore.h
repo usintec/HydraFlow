@@ -73,6 +73,17 @@
 #include <HydraCore/Memory/MemoryMacros.h>
 
 // ---------------------------------------------------------------------------
+// Module 5: Events
+// Typed pub/sub: synchronous dispatch, async queueing, priority ordering.
+// ---------------------------------------------------------------------------
+#include <HydraCore/Events/Event.h>
+#include <HydraCore/Events/EventListener.h>
+#include <HydraCore/Events/Subscription.h>
+#include <HydraCore/Events/EventDispatcher.h>
+#include <HydraCore/Events/EventQueue.h>
+#include <HydraCore/Events/EventBus.h>
+
+// ---------------------------------------------------------------------------
 // Module 1: Application
 // Engine lifecycle, module registration, service locator.
 // ---------------------------------------------------------------------------

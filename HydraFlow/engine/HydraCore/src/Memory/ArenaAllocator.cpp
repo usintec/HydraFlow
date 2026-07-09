@@ -1,5 +1,7 @@
 #include <HydraCore/Memory/ArenaAllocator.h>
 
+#include <new>
+
 namespace Hydra {
 
 // =============================================================================
@@ -50,8 +52,7 @@ void* ArenaAllocator::Allocate(usize size, usize alignment)
     const usize needed = Memory::AlignUp(size, alignment) + alignment;
     const usize newPageSize = (needed > m_PageSize) ? needed : m_PageSize;
 
-    AddPage();
-    m_Pages.back().capacity = newPageSize;   // override capacity for oversized allocs
+    AddPage(newPageSize);
 
     void* ptr = tryAllocFromPage(m_Pages.back());
     HYDRA_ASSERT(ptr && "Oversized allocation still failed after new page");
@@ -86,7 +87,7 @@ usize ArenaAllocator::GetCapacityBytes() const noexcept
 void ArenaAllocator::ReleasePages()
 {
     for (auto& page : m_Pages)
-        delete[] page.data;
+        ::operator delete[](page.data, std::align_val_t(kPageAlignment));
     m_Pages.clear();
     m_TotalUsed  = 0;
     m_AllocCount = 0;
@@ -102,12 +103,17 @@ ArenaAllocator::Page& ArenaAllocator::CurrentPage()
     return m_Pages.back();
 }
 
-void ArenaAllocator::AddPage()
+void ArenaAllocator::AddPage(usize capacity)
 {
+    const usize pageCapacity = (capacity > 0) ? capacity : m_PageSize;
+
     Page page;
-    page.data     = new byte[m_PageSize];
+    // Pages must start at an address aligned to at least kPageAlignment so
+    // that any in-range alignment request (<= kPageAlignment) can be
+    // satisfied purely by AlignUp(page.offset, alignment) from offset 0.
+    page.data     = static_cast<byte*>(::operator new[](pageCapacity, std::align_val_t(kPageAlignment)));
     page.offset   = 0;
-    page.capacity = m_PageSize;
+    page.capacity = pageCapacity;
     m_Pages.push_back(std::move(page));
 }
 

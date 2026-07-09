@@ -83,8 +83,13 @@ private:
         usize capacity = 0;
     };
 
+    /// Alignment guaranteed for the start of every page. Must be >= the
+    /// largest alignment any caller will request, so that AlignUp(page.offset, ...)
+    /// starting from offset 0 actually yields an aligned address.
+    static constexpr usize kPageAlignment = 64;
+
     Page& CurrentPage();
-    void  AddPage();
+    void  AddPage(usize capacity = 0);
 
     Vector<Page> m_Pages;
     usize        m_PageSize  = 0;

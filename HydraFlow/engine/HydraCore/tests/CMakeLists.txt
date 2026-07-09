@@ -18,6 +18,9 @@ add_executable(HydraCore_Tests
 
     # Module 4 tests
     test_Memory_Module4.cpp
+
+    # Module 5 tests
+    test_Events_Module5.cpp
 )
 
 target_link_libraries(HydraCore_Tests

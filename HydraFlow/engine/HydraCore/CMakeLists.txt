@@ -73,6 +73,14 @@ add_library(HydraCore STATIC
     src/Memory/ArenaAllocator.cpp      # Paged bump-pointer allocator
     src/Memory/MemoryTracker.cpp       # Allocation tracking, statistics, hooks
     src/Memory/MemoryManager.cpp       # Global façade: tracked system alloc + registry
+
+    # ------------------------------------------------------------------
+    # Module 5 — Events
+    # Typed pub/sub: synchronous dispatch, async queueing, priority order.
+    # ------------------------------------------------------------------
+    src/Events/EventDispatcher.cpp     # Type-keyed synchronous pub/sub hub
+    src/Events/EventQueue.cpp          # Thread-safe FIFO for deferred dispatch
+    src/Events/EventBus.cpp            # Façade combining dispatcher + queue
 )
 
 # =============================================================================

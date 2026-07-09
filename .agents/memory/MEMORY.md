@@ -1,3 +1,5 @@
 - [HydraCore build setup](hydracore-build.md) — C++20 static lib; all deps via Nix system packages; build in HydraFlow/build/Debug with Ninja
 - [HydraCore Logging Module 2](hydracore-logging.md) — Instance-based Logger + LoggerFactory; critical deadlock trap in Initialize() if Create() called while mutex held.
 - [HydraCore Configuration Module 3](hydracore-configuration.md) — ConfigValue::Type has enumerator "String" which shadows Hydra::String — warning only, not an error.
+- [Over-aligned custom allocators](arena-allocator-alignment.md) — page/arena-style allocators must allocate backing buffers with aligned new, not plain `new[]`, or over-aligned requests intermittently fail.
+- [HydraCore Events Module 5](hydracore-events.md) — EventDispatcher/EventQueue/EventBus design: type_index-keyed sync dispatch + FIFO async queue, RAII Subscription.
