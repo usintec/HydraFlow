@@ -61,6 +61,18 @@ add_library(HydraCore STATIC
     src/Configuration/ConfigSchema.cpp         # Validation rules (RequireKey/Type/Range/AllowValues)
     src/Configuration/EnvironmentSettings.cpp  # Env enum + HYDRA_ENV detection
     src/Configuration/ConfigurationManager.cpp # Main façade: layered config, schema, hot reload
+
+    # ------------------------------------------------------------------
+    # Module 4 — Memory
+    # Custom allocators, allocation tracking, leak detection, profiling hooks.
+    # ------------------------------------------------------------------
+    src/Memory/LinearAllocator.cpp     # Bump-pointer allocator
+    src/Memory/StackAllocator.cpp      # LIFO allocator with marker rollback
+    src/Memory/PoolAllocator.cpp       # Fixed-size block allocator
+    src/Memory/FreeListAllocator.cpp   # Variable-size allocator with coalescing
+    src/Memory/ArenaAllocator.cpp      # Paged bump-pointer allocator
+    src/Memory/MemoryTracker.cpp       # Allocation tracking, statistics, hooks
+    src/Memory/MemoryManager.cpp       # Global façade: tracked system alloc + registry
 )
 
 # =============================================================================

@@ -143,7 +143,7 @@ TEST_F(LinearAllocatorTest, DeallocateIsNoOp)
 
 TEST_F(LinearAllocatorTest, ResetReclaims)
 {
-    alloc.Allocate(512, 8);
+    (void)alloc.Allocate(512, 8);
     alloc.Reset();
     EXPECT_EQ(alloc.GetUsedBytes(),      0u);
     EXPECT_EQ(alloc.GetAllocationCount(), 0u);
@@ -156,8 +156,8 @@ TEST_F(LinearAllocatorTest, WritabilityOfAllocatedMemory)
     void* p = alloc.Allocate(128, 8);
     ASSERT_NE(p, nullptr);
     std::memset(p, 0xAB, 128);
-    EXPECT_EQ(static_cast<byte*>(p)[0],   0xAB);
-    EXPECT_EQ(static_cast<byte*>(p)[127], 0xAB);
+    EXPECT_EQ(static_cast<unsigned char*>(p)[0],   0xAB);
+    EXPECT_EQ(static_cast<unsigned char*>(p)[127], 0xAB);
 }
 
 // =============================================================================
@@ -206,8 +206,8 @@ TEST_F(StackAllocatorTest, MarkerRollback)
 {
     void* a = alloc.Allocate(64, 8);
     StackMarker m = alloc.GetMarker();
-    alloc.Allocate(64, 8);
-    alloc.Allocate(64, 8);
+    (void)alloc.Allocate(64, 8);
+    (void)alloc.Allocate(64, 8);
     alloc.FreeToMarker(m);
     EXPECT_EQ(alloc.GetAllocationCount(), 1u);
     // Can re-allocate from the rolled-back position
@@ -218,8 +218,8 @@ TEST_F(StackAllocatorTest, MarkerRollback)
 
 TEST_F(StackAllocatorTest, ResetClearsAll)
 {
-    alloc.Allocate(128, 8);
-    alloc.Allocate(128, 8);
+    (void)alloc.Allocate(128, 8);
+    (void)alloc.Allocate(128, 8);
     alloc.Reset();
     EXPECT_EQ(alloc.GetUsedBytes(),       0u);
     EXPECT_EQ(alloc.GetAllocationCount(), 0u);
@@ -237,7 +237,7 @@ TEST_F(StackAllocatorTest, WritabilityAfterDeallocAndRealloc)
     alloc.Deallocate(p);
     void* q = alloc.Allocate(64, 8);
     std::memset(q, 0xAA, 64);
-    EXPECT_EQ(static_cast<byte*>(q)[0], 0xAA);
+    EXPECT_EQ(static_cast<unsigned char*>(q)[0], 0xAA);
 }
 
 TEST_F(StackAllocatorTest, FreeByteDecreaseAfterDealloc)
@@ -306,8 +306,8 @@ TEST_F(PoolAllocatorTest, WritabilityOfBlock)
     void* p = alloc.Allocate();
     ASSERT_NE(p, nullptr);
     std::memset(p, 0xCC, 32);
-    EXPECT_EQ(static_cast<byte*>(p)[0],  0xCC);
-    EXPECT_EQ(static_cast<byte*>(p)[31], 0xCC);
+    EXPECT_EQ(static_cast<unsigned char*>(p)[0],  0xCC);
+    EXPECT_EQ(static_cast<unsigned char*>(p)[31], 0xCC);
     alloc.Deallocate(p);
 }
 
@@ -322,8 +322,8 @@ TEST_F(PoolAllocatorTest, ReuseAfterFree)
 
 TEST_F(PoolAllocatorTest, CapacityAndUsed)
 {
-    alloc.Allocate();
-    alloc.Allocate();
+    (void)alloc.Allocate();
+    (void)alloc.Allocate();
     EXPECT_EQ(alloc.GetCapacityBytes(), 32u * 16u);
     EXPECT_EQ(alloc.GetUsedBytes(),     32u * 2u);
 }
@@ -415,16 +415,16 @@ TEST_F(FreeListAllocatorTest, WritabilityAndNonOverlap)
     ASSERT_NE(b, nullptr);
     std::memset(a, 0xAA, 64);
     std::memset(b, 0xBB, 64);
-    EXPECT_EQ(static_cast<byte*>(a)[0], 0xAA);
-    EXPECT_EQ(static_cast<byte*>(b)[0], 0xBB);
+    EXPECT_EQ(static_cast<unsigned char*>(a)[0], 0xAA);
+    EXPECT_EQ(static_cast<unsigned char*>(b)[0], 0xBB);
     alloc.Deallocate(a);
     alloc.Deallocate(b);
 }
 
 TEST_F(FreeListAllocatorTest, ResetReturnsFullCapacity)
 {
-    alloc.Allocate(128, 8);
-    alloc.Allocate(128, 8);
+    (void)alloc.Allocate(128, 8);
+    (void)alloc.Allocate(128, 8);
     alloc.Reset();
     EXPECT_EQ(alloc.GetUsedBytes(),       0u);
     EXPECT_EQ(alloc.GetAllocationCount(), 0u);
@@ -496,7 +496,7 @@ TEST_F(ArenaAllocatorTest, DeallocateIsNoOp)
 TEST_F(ArenaAllocatorTest, ResetReusesPagesWithoutOSAlloc)
 {
     for (usize i = 0; i < kPageSize / 8 + 4; ++i)
-        alloc.Allocate(8, 8);
+        (void)alloc.Allocate(8, 8);
     usize pageCntBefore = alloc.GetPageCount();
     alloc.Reset();
     EXPECT_EQ(alloc.GetUsedBytes(),       0u);
@@ -506,7 +506,7 @@ TEST_F(ArenaAllocatorTest, ResetReusesPagesWithoutOSAlloc)
 
 TEST_F(ArenaAllocatorTest, ReleasePagesFreesMemory)
 {
-    alloc.Allocate(512, 8);
+    (void)alloc.Allocate(512, 8);
     alloc.ReleasePages();
     EXPECT_EQ(alloc.GetPageCount(), 0u);
     EXPECT_EQ(alloc.GetUsedBytes(), 0u);
@@ -517,7 +517,7 @@ TEST_F(ArenaAllocatorTest, WritabilityOfAllocatedMemory)
     void* p = alloc.Allocate(64, 8);
     ASSERT_NE(p, nullptr);
     std::memset(p, 0x77, 64);
-    EXPECT_EQ(static_cast<byte*>(p)[0], 0x77);
+    EXPECT_EQ(static_cast<unsigned char*>(p)[0], 0x77);
 }
 
 // =============================================================================

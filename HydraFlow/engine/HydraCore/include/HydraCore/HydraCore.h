@@ -54,6 +54,25 @@
 #include <HydraCore/Configuration/ConfigurationManager.h>
 
 // ---------------------------------------------------------------------------
+// Module 4: Memory
+// Custom allocators, allocation tracking, leak detection, profiling hooks.
+// ---------------------------------------------------------------------------
+#include <HydraCore/Memory/Alignment.h>
+#include <HydraCore/Memory/IAllocator.h>
+#include <HydraCore/Memory/LinearAllocator.h>
+#include <HydraCore/Memory/StackAllocator.h>
+#include <HydraCore/Memory/PoolAllocator.h>
+#include <HydraCore/Memory/FreeListAllocator.h>
+#include <HydraCore/Memory/ArenaAllocator.h>
+#include <HydraCore/Memory/AllocationRecord.h>
+#include <HydraCore/Memory/MemoryStatistics.h>
+#include <HydraCore/Memory/IMemoryProfilingHook.h>
+#include <HydraCore/Memory/ILeakDetectionHook.h>
+#include <HydraCore/Memory/MemoryTracker.h>
+#include <HydraCore/Memory/MemoryManager.h>
+#include <HydraCore/Memory/MemoryMacros.h>
+
+// ---------------------------------------------------------------------------
 // Module 1: Application
 // Engine lifecycle, module registration, service locator.
 // ---------------------------------------------------------------------------
