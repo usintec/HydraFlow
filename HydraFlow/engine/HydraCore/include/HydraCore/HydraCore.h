@@ -99,6 +99,21 @@
 #include <HydraCore/Threading/ParallelFor.h>
 
 // ---------------------------------------------------------------------------
+// Module 7: Job System
+// Job/JobHandle, DependencyGraph, WorkerQueue, Task/TaskGraph, and
+// JobScheduler — parallel execution with dependency scheduling, and a hook
+// reserved for future GPU job dispatch.
+// ---------------------------------------------------------------------------
+#include <HydraCore/Jobs/JobTypes.h>
+#include <HydraCore/Jobs/Job.h>
+#include <HydraCore/Jobs/JobHandle.h>
+#include <HydraCore/Jobs/DependencyGraph.h>
+#include <HydraCore/Jobs/WorkerQueue.h>
+#include <HydraCore/Jobs/Task.h>
+#include <HydraCore/Jobs/TaskGraph.h>
+#include <HydraCore/Jobs/JobScheduler.h>
+
+// ---------------------------------------------------------------------------
 // Module 1: Application
 // Engine lifecycle, module registration, service locator.
 // ---------------------------------------------------------------------------

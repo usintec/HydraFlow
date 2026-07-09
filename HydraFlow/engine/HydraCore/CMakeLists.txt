@@ -91,6 +91,16 @@ add_library(HydraCore STATIC
     src/Threading/ThreadUtils.cpp      # Thread naming, id, sleep/yield, hardware concurrency
     src/Threading/WorkerThread.cpp     # Named std::thread wrapper
     src/Threading/ThreadPool.cpp       # Worker pool + task queue + Submit()/WaitIdle()/Shutdown()
+
+    # ------------------------------------------------------------------
+    # Module 7 — Job System
+    # Job/JobHandle, DependencyGraph, WorkerQueue, Task/TaskGraph, and the
+    # JobScheduler that ties them together for parallel + dependency-aware
+    # execution (with a hook reserved for future GPU job dispatch).
+    # ------------------------------------------------------------------
+    src/Jobs/DependencyGraph.cpp       # DAG of ready-counts/dependents keyed by JobId
+    src/Jobs/WorkerQueue.cpp           # Thread-safe priority queue of ready Jobs
+    src/Jobs/JobScheduler.cpp          # Worker pool + dependency cascade + TaskGraph submission
 )
 
 # =============================================================================
