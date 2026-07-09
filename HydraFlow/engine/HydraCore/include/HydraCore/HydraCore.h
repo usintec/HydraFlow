@@ -84,6 +84,21 @@
 #include <HydraCore/Events/EventBus.h>
 
 // ---------------------------------------------------------------------------
+// Module 6: Threading
+// ThreadPool/WorkerThread/Future/Promise, Mutex/ConditionVariable/Semaphore
+// wrappers, thread utilities, and the ParallelFor CPU-parallelism helper.
+// ---------------------------------------------------------------------------
+#include <HydraCore/Threading/ThreadUtils.h>
+#include <HydraCore/Threading/Mutex.h>
+#include <HydraCore/Threading/ConditionVariable.h>
+#include <HydraCore/Threading/Semaphore.h>
+#include <HydraCore/Threading/Future.h>
+#include <HydraCore/Threading/Promise.h>
+#include <HydraCore/Threading/WorkerThread.h>
+#include <HydraCore/Threading/ThreadPool.h>
+#include <HydraCore/Threading/ParallelFor.h>
+
+// ---------------------------------------------------------------------------
 // Module 1: Application
 // Engine lifecycle, module registration, service locator.
 // ---------------------------------------------------------------------------

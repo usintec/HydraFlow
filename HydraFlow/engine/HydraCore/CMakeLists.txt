@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.22)
 # =============================================================================
 
 find_package(PkgConfig REQUIRED)
+find_package(Threads REQUIRED)
 
 pkg_check_modules(SPDLOG   REQUIRED spdlog)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
@@ -81,6 +82,15 @@ add_library(HydraCore STATIC
     src/Events/EventDispatcher.cpp     # Type-keyed synchronous pub/sub hub
     src/Events/EventQueue.cpp          # Thread-safe FIFO for deferred dispatch
     src/Events/EventBus.cpp            # Façade combining dispatcher + queue
+
+    # ------------------------------------------------------------------
+    # Module 6 — Threading
+    # ThreadPool/WorkerThread/Future/Promise, Mutex/CV/Semaphore wrappers,
+    # thread utilities — the CPU-parallelism backbone of HydraCore.
+    # ------------------------------------------------------------------
+    src/Threading/ThreadUtils.cpp      # Thread naming, id, sleep/yield, hardware concurrency
+    src/Threading/WorkerThread.cpp     # Named std::thread wrapper
+    src/Threading/ThreadPool.cpp       # Worker pool + task queue + Submit()/WaitIdle()/Shutdown()
 )
 
 # =============================================================================
@@ -110,6 +120,7 @@ target_include_directories(HydraCore
 target_link_libraries(HydraCore
     PUBLIC
         nlohmann_json::nlohmann_json
+        Threads::Threads          # std::thread / pthread — required by Module 6 (Threading)
     PRIVATE
         ${YAML_CPP_LIBRARIES}
 )

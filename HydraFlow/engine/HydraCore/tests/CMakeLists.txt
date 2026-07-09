@@ -21,6 +21,9 @@ add_executable(HydraCore_Tests
 
     # Module 5 tests
     test_Events_Module5.cpp
+
+    # Module 6 tests
+    test_Threading_Module6.cpp
 )
 
 target_link_libraries(HydraCore_Tests
