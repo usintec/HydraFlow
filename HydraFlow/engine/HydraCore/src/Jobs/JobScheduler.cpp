@@ -86,19 +86,45 @@ Vector<JobHandle> JobScheduler::Schedule(const TaskGraph& graph)
         m_DependencyGraph.AddDependency(dependentJobId, dependsOnJobId);
     }
 
-    // Now that every edge is registered, ask each job's Job object to
-    // reflect its true remaining-dependency count and enqueue the ones
-    // that are already ready (i.e. had no dependencies at all).
+    // Two-pass enqueue — this ordering is critical for correctness.
+    //
+    // Pass 1: snapshot each job's dependency count from the (now fully
+    //   wired) DependencyGraph into the job's own atomic counter, and
+    //   build the handles vector. No jobs are pushed to the WorkerQueue
+    //   yet, so no worker thread can start executing and producing
+    //   cascading "dependency completed" events that would race with our
+    //   remaining-count reads in this very loop.
+    //
+    // Pass 2: push every job whose snapshotted count is zero (i.e. it
+    //   had no dependencies and is ready to run immediately). By the
+    //   time this push loop starts, every job's remaining-count is
+    //   already finalised. If a worker picks up and completes one of
+    //   these jobs before this loop reaches the next job, the cascade
+    //   from OnJobFinished uses job->RemainingDependencies() (already
+    //   set in pass 1) to decrement counts on dependents — that is now
+    //   safe because all counts are frozen in place and correct. The
+    //   OnJobFinished cascade is the *sole* path that pushes
+    //   not-initially-ready jobs (those with remaining > 0); this loop
+    //   pushes *only* the initially-ready ones (remaining == 0). The two
+    //   paths can never both push the same job because:
+    //     • an initially-ready job (remaining == 0) has no dependencies,
+    //       so no "dependency completed" event will ever fire for it.
+    //     • a not-initially-ready job (remaining > 0) is skipped below.
     Vector<JobHandle> handles;
     handles.reserve(jobs.size());
+
+    // Pass 1 — snapshot counts, no side-effects on the queue.
     for (const SharedPtr<Job>& job : jobs)
     {
         const u32 remaining = m_DependencyGraph.GetRemainingDependencyCount(job->GetId());
         job->RemainingDependencies().store(remaining, std::memory_order_release);
-
         handles.emplace_back(job);
+    }
 
-        if (remaining == 0)
+    // Pass 2 — push initially-ready jobs now that all counts are stable.
+    for (const SharedPtr<Job>& job : jobs)
+    {
+        if (job->RemainingDependencies().load(std::memory_order_acquire) == 0)
         {
             m_ActiveJobCount.fetch_add(1, std::memory_order_acq_rel);
             m_ReadyQueue.Push(job);

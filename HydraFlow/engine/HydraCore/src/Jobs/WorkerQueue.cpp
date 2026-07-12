@@ -1,5 +1,4 @@
 #include <HydraCore/Jobs/WorkerQueue.h>
-#include <cstdio>
 
 namespace Hydra {
 
@@ -8,7 +7,6 @@ void WorkerQueue::Push(SharedPtr<Job> job)
     {
         ScopedLock<Mutex> lock(m_Mutex);
         const u64 sequence = m_NextSequence.fetch_add(1, std::memory_order_relaxed);
-        fprintf(stderr, "[DBG] Push job id=%llu seq=%llu\n", (unsigned long long)job->GetId(), (unsigned long long)sequence);
         m_Queue.push(Entry{std::move(job), sequence});
     }
     // One new ready job means at most one sleeping worker needs waking.

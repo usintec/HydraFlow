@@ -1,5 +1,4 @@
 #include <HydraCore/Jobs/DependencyGraph.h>
-#include <cstdio>
 
 namespace Hydra {
 
@@ -47,15 +46,16 @@ Vector<JobId> DependencyGraph::OnNodeCompleted(JobId id)
         return newlyReady; // Nothing depended on this node.
     }
 
-    fprintf(stderr, "[DBG] OnNodeCompleted(%llu) dependents.size=%zu\n", (unsigned long long)id, dependentsIt->second.size());
     for (const JobId dependentId : dependentsIt->second)
     {
+        // Every dependent had its counter incremented once per
+        // dependency it has (see AddDependency), so decrementing here
+        // exactly undoes that — once it hits zero, every dependency has
+        // now finished and the node is ready to run.
         auto countIt = m_RemainingDependencyCount.find(dependentId);
-        u32 before = (countIt != m_RemainingDependencyCount.end()) ? countIt->second : 999;
         if (countIt != m_RemainingDependencyCount.end() && countIt->second > 0)
         {
             countIt->second -= 1;
-            fprintf(stderr, "[DBG]   dependent=%llu before=%u after=%u\n", (unsigned long long)dependentId, before, countIt->second);
             if (countIt->second == 0)
             {
                 newlyReady.push_back(dependentId);

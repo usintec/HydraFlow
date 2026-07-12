@@ -4,3 +4,4 @@
 - [Over-aligned custom allocators](arena-allocator-alignment.md) — page/arena-style allocators must allocate backing buffers with aligned new, not plain `new[]`, or over-aligned requests intermittently fail.
 - [HydraCore Events Module 5](hydracore-events.md) — EventDispatcher/EventQueue/EventBus design: type_index-keyed sync dispatch + FIFO async queue, RAII Subscription.
 - [HydraCore Threading Module 6](hydracore-threading.md) — ThreadPool/Future/Promise/Mutex/CV/Semaphore design; counting_semaphore default max must be i32::max, not isize::max (static_assert).
+- [JobScheduler two-pass enqueue](job-scheduler-two-pass.md) — single-loop push+read races with cascading completions; must separate count-snapshot from queue-push into two passes.
