@@ -101,6 +101,22 @@ add_library(HydraCore STATIC
     src/Jobs/DependencyGraph.cpp       # DAG of ready-counts/dependents keyed by JobId
     src/Jobs/WorkerQueue.cpp           # Thread-safe priority queue of ready Jobs
     src/Jobs/JobScheduler.cpp          # Worker pool + dependency cascade + TaskGraph submission
+
+    # ------------------------------------------------------------------
+    # Module 8 — File System
+    # Cross-platform path manipulation (UTF-8), static File/Directory
+    # utilities, typed BinaryReader/Writer with endianness control,
+    # UTF-8 TextReader/Writer, and a pluggable VirtualFileSystem
+    # interface with a NativeFileSystem default implementation.
+    # ------------------------------------------------------------------
+    src/FileSystem/Path.cpp            # Path wraps std::filesystem::path; always UTF-8 strings
+    src/FileSystem/File.cpp            # Static bulk I/O and manipulation helpers
+    src/FileSystem/Directory.cpp       # Static directory creation/deletion/listing
+    src/FileSystem/BinaryReader.cpp    # Typed binary reader with byte-order handling
+    src/FileSystem/BinaryWriter.cpp    # Typed binary writer with byte-order handling
+    src/FileSystem/TextReader.cpp      # UTF-8 text reader; strips BOM, handles CRLF
+    src/FileSystem/TextWriter.cpp      # UTF-8 text writer; supports append mode
+    src/FileSystem/NativeFileSystem.cpp # IVirtualFileSystem impl + FileSystem::Get/Set
 )
 
 # =============================================================================

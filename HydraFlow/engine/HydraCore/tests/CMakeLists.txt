@@ -27,6 +27,9 @@ add_executable(HydraCore_Tests
 
     # Module 7 tests
     test_Jobs_Module7.cpp
+
+    # Module 8 tests
+    test_FileSystem_Module8.cpp
 )
 
 target_link_libraries(HydraCore_Tests

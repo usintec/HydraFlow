@@ -114,6 +114,23 @@
 #include <HydraCore/Jobs/JobScheduler.h>
 
 // ---------------------------------------------------------------------------
+// Module 8: File System
+// Cross-platform UTF-8 paths, static File/Directory helpers, typed
+// BinaryReader/Writer (with endianness control), UTF-8 TextReader/Writer,
+// and a pluggable IVirtualFileSystem interface with a NativeFileSystem default.
+// ---------------------------------------------------------------------------
+#include <HydraCore/FileSystem/FileSystemTypes.h>
+#include <HydraCore/FileSystem/Path.h>
+#include <HydraCore/FileSystem/File.h>
+#include <HydraCore/FileSystem/Directory.h>
+#include <HydraCore/FileSystem/BinaryReader.h>
+#include <HydraCore/FileSystem/BinaryWriter.h>
+#include <HydraCore/FileSystem/TextReader.h>
+#include <HydraCore/FileSystem/TextWriter.h>
+#include <HydraCore/FileSystem/IVirtualFileSystem.h>
+#include <HydraCore/FileSystem/NativeFileSystem.h>
+
+// ---------------------------------------------------------------------------
 // Module 1: Application
 // Engine lifecycle, module registration, service locator.
 // ---------------------------------------------------------------------------
